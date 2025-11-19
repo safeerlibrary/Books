@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Book Sales Memo Generator</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f4f9; color: #333; }
+        
+        /* Main Container */
+        #app { 
+            max-width: 950px; 
+            margin: 0 auto; 
+            background: #fff; 
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+            border-top: 5px solid #007bff;
+        }
+
+        /* Header Image on Site */
+        .site-header-img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            margin: 0 auto 20px auto;
+        }
+
+        h1 { 
+            text-align: center; 
+            color: #007bff; 
+            font-weight: 700;
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+        }
+
+        /* Input Row Layout */
+        .top-controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            align-items: flex-end;
+        }
+        .control-group { flex: 1; }
+        label { font-weight: 600; margin-bottom: 8px; display: block; color: #555; }
+        input[type="text"], select { 
+            width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px;
+        }
+
+        /* Buttons */
+        button { border: none; border-radius: 5px; cursor: pointer; font-size: 16px; transition: background-color .3s; display: block; }
+        .btn-green { background-color: #28a745; color: white; padding: 15px 20px; width: 100%; margin-top: 20px; font-weight: bold; }
+        .btn-green:hover { background-color: #218838; }
+        .btn-red { background-color: #dc3545; color: white; padding: 10px 20px; margin-top: 15px; }
+        .btn-red:hover { background-color: #c82333; }
+
+        /* Web View Table Styles */
+        #books-list { margin-top: 20px; min-height: 40px; }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th, .data-table td { border: 1px solid #ddd; padding: 12px; text-align: left; font-size: 14px; vertical-align: middle; }
+        .data-table th { background-color: #f8f9fa; color: #333; font-weight: bold; }
+        .data-table tr:nth-child(even) { background-color: #f9f9f9; }
+        .data-table input[type="checkbox"] { transform: scale(1.2); cursor: pointer; margin-right: 10px; }
+        .data-table input[type="number"] { width: 70px; padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 4px; }
+        .total-row { font-weight: bold; background-color: #fff3cd !important; color: #856404; }
+        #select-all-header { display: flex; align-items: center; cursor: pointer; }
+        .loader { display: inline-block; padding: 4px 8px; background: #e9ecef; border-radius: 4px; font-size: .9em; margin-left: 8px; }
+
+        /* ============================
+           PRINT / MEMO STYLES (FIXED)
+           ============================ */
+        .memo-container { display: none; }
+
+        @media print {
+            /* Force A4 with very small margins to fit content */
+            @page { 
+                size: A4; 
+                margin: 6mm; 
+            }
+            
+            body { 
+                background-color: white; 
+                margin: 0; 
+                padding: 0; 
+                -webkit-print-color-adjust: exact; 
+            }
+            
+            /* Hide web interface */
+            body > #app > *:not(.memo-output) { display: none !important; }
+            
+            /* Reset App container */
+            #app { box-shadow: none; border: none; padding: 0; margin: 0; max-width: 100%; width: 100%; }
+
+            /* Memo Specifics */
+            .memo-container { 
+                display: block !important; 
+                width: 100%;
+                padding-bottom: 30px; /* Make space for footer */
+            }
+
+            /* Smaller Header Image for Print to save vertical space */
+            .memo-header-img {
+                width: 100%;
+                max-height: 100px; 
+                object-fit: contain;
+                display: block;
+                margin-bottom: 5px;
+            }
+
+            .memo-meta {
+                margin-bottom: 5px;
+                border-bottom: 1px solid #000;
+                padding-bottom: 5px;
+            }
+            .memo-meta h2 { margin: 2px 0; text-align: center; color: #000; font-size: 16px; }
+            .memo-meta table td { padding: 2px; font-size: 12px; }
+
+            /* Compact Table for Print */
+            .memo-table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                font-size: 11px; /* Smaller font to fit more rows */
+            }
+            .memo-table th, .memo-table td { 
+                border: 1px solid #000; 
+                padding: 3px 5px; /* Reduce padding to save height */
+                vertical-align: middle;
+            }
+            .memo-table th { background-color: #ddd !important; font-weight: bold; text-align: center; }
+
+            /* Fixed Column Widths to prevent overflow */
+            .col-sl { width: 5%; text-align: center; }
+            .col-item { width: 55%; }
+            .col-price { width: 13%; text-align: right; }
+            .col-qty { width: 7%; text-align: center; }
+            .col-total { width: 20%; text-align: right; }
+
+            /* UPDATED FOOTER CREDIT STYLES 
+               Fixed to bottom left
+            */
+            .footer-credit {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                /* Matches @page margin (6mm) so text aligns with content */
+                padding: 6mm; 
+                box-sizing: border-box;
+                
+                font-size: 8pt;
+                text-align: left;
+                color: #555;
+                background-color: white; /* Ensures readability over any background */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <img src="image.png" alt="Academy Banner" class="site-header-img">
+
+        <h1>📚 Book Sales Memo</h1>
+
+        <div class="top-controls">
+            <div class="control-group">
+                <label for="class-select">Select Class:</label>
+                <select id="class-select" onchange="displayBooks()">
+                    <option value="">-- Select Class --</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="student-name">Student Name:</label>
+                <input type="text" id="student-name" placeholder="Enter student's name">
+            </div>
+
+            <div class="control-group">
+                <label for="student-id">Student ID:</label>
+                <input type="text" id="student-id" placeholder="Enter student's ID">
+            </div>
+        </div>
+
+        <div id="books-list"></div>
+
+        <button onclick="generateMemo()" class="btn-green">Generate Bill, Save Data, and Print</button>
+        <button onclick="resetForm()" class="btn-red">Create New Bill</button>
+
+        <div id="memo-output" class="memo-container memo-output"></div>
+    </div>
+
+<script>
+/* =========================
+   Sheet settings
+   ========================= */
+const SHEETS = [
+  { name: "Nursery", gid: "489499898" },
+  { name: "Reception", gid: "2027098770" },
+  { name: "Year 1", gid: "1401175034" },
+  { name: "Year 2", gid: "920652694" },
+  { name: "Year 3", gid: "853416613" },
+  { name: "Year 4", gid: "746344402" },
+  { name: "Year 5", gid: "1210824589" },
+  { name: "Year 6", gid: "863626512" },
+  { name: "Year 7", gid: "790069678" },
+  { name: "Year 8", gid: "622660697" },
+  { name: "Year 9", gid: "2022019354" },
+  { name: "Question Paper Set", gid: "596988486" }
+];
+
+const BASE = "https://docs.google.com/spreadsheets/d/1htWKKFov6IgbkJTqrhXl-EvvHzZlyWHOsNAQScfarw0/export?format=csv&gid=";
+
+/* ========= Utilities ========= */
+function csvToRows(str) {
+  str = str.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const rows = [];
+  let cur = [];
+  let field = '';
+  let inQuotes = false;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (str[i+1] === '"') { field += '"'; i++; } 
+        else { inQuotes = false; }
+      } else { field += ch; }
+    } else {
+      if (ch === '"') { inQuotes = true; } 
+      else if (ch === ',') { cur.push(field); field = ''; } 
+      else if (ch === '\n') { cur.push(field); field = ''; rows.push(cur); cur = []; } 
+      else { field += ch; }
+    }
+  }
+  if (field !== '' || inQuotes) cur.push(field);
+  if (cur.length > 0) rows.push(cur);
+  return rows;
+}
+
+function parseCSVToObjects(csvText) {
+  const rows = csvToRows(csvText);
+  if (!rows || rows.length === 0) return [];
+  const headerRow = rows[0].map(h => (h || '').toString().trim());
+  const map = { Subject: -1, Books: -1, Price: -1 };
+  headerRow.forEach((h, idx) => {
+    const key = (h || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    if (/^subject\b/i.test(h) || key.includes('subject')) map.Subject = idx;
+    else if (/^books?\b/i.test(h) || key.includes('book')) map.Books = idx;
+    else if (/^price\b/i.test(h) || key.includes('price') || key.includes('rate')) map.Price = idx;
+  });
+  if (map.Subject === -1 && headerRow.length >= 2) map.Subject = 1;
+  if (map.Books === -1 && headerRow.length >= 3) map.Books = 2;
+  if (map.Price === -1) map.Price = headerRow.length - 1;
+
+  const data = [];
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    if (!row || row.every(c => (c || '').toString().trim() === '')) continue;
+    const subject = (row[map.Subject] || '').toString().trim();
+    const books = (row[map.Books] || '').toString().trim();
+    let priceRaw = (row[map.Price] || '').toString().trim();
+    priceRaw = priceRaw.replace(/[^0-9.\-]/g, '');
+    const price = parseFloat(priceRaw) || 0;
+    data.push({ Subject: subject || '-', Books: books || '-', Price: price });
+  }
+  return data;
+}
+
+/* ============ DOM Binding ============ */
+document.addEventListener('DOMContentLoaded', () => {
+  const select = document.getElementById('class-select');
+  SHEETS.forEach(s => {
+    const option = document.createElement('option');
+    option.value = s.name;
+    option.textContent = s.name;
+    select.appendChild(option);
+  });
+});
+
+/* ========================= Load CSV ========================= */
+async function loadBooksForClass(className) {
+  const sheet = SHEETS.find(s => s.name === className);
+  if (!sheet) return [];
+  const url = BASE + sheet.gid;
+  const booksListDiv = document.getElementById('books-list');
+  booksListDiv.innerHTML = '<span class="loader">Loading books...</span>';
+
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('Fetch failed');
+    const csv = await resp.text();
+    return parseCSVToObjects(csv);
+  } catch (err) {
+    console.error(err);
+    booksListDiv.innerHTML = '<div style="color:#a00; padding:10px;">Error loading sheet.</div>';
+    return [];
+  }
+}
+
+/* ==================================== Display books ==================================== */
+async function displayBooks() {
+  const selectedClass = document.getElementById('class-select').value;
+  const booksListDiv = document.getElementById('books-list');
+  booksListDiv.innerHTML = '';
+
+  if (!selectedClass) return;
+
+  const books = await loadBooksForClass(selectedClass);
+  if (!books || books.length === 0) {
+    booksListDiv.innerHTML = '<div style="color:#555; padding:10px;">No books found for this class.</div>';
+    window.bookData = window.bookData || {};
+    window.bookData[selectedClass] = [];
+    return;
+  }
+
+  let html = `
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>
+            <div id="select-all-header" onclick="toggleSelectAll()">
+              <input type="checkbox" id="select-all-books">
+              <span style="margin-left:5px;">Subject (Select All)</span>
+            </div>
+          </th>
+          <th>Book Name</th>
+          <th>Unit Price (BDT)</th>
+          <th>Quantity</th>
+          <th>Total Price (BDT)</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  books.forEach((book, index) => {
+    const bookId = `book-${index}`;
+    const priceDisplay = (typeof book.Price === 'number') ? book.Price.toLocaleString() : '0';
+    html += `
+      <tr id="${bookId}-row">
+        <td>
+          <input type="checkbox" id="check-book-${index}" data-index="${index}" onchange="updateQuantityAndCheckbox(this, 'checkbox')">
+          ${escapeHtml(book.Subject)}
+        </td>
+        <td>${escapeHtml(book.Books)}</td>
+        <td class="unit-price" data-price="${book.Price}">${priceDisplay}</td>
+        <td>
+          <input type="number" min="0" value="0" id="qty-book-${index}" data-index="${index}" oninput="updateQuantityAndCheckbox(this, 'input')">
+        </td>
+        <td id="${bookId}-total">0</td>
+      </tr>
+    `;
+  });
+
+  html += `
+      <tr>
+        <td colspan="4" style="text-align:right; font-weight:bold;">Grand Total:</td>
+        <td id="grand-total" class="total-row">0 BDT</td>
+      </tr>
+      </tbody>
+    </table>
+  `;
+
+  booksListDiv.innerHTML = html;
+  window.bookData = window.bookData || {};
+  window.bookData[selectedClass] = books;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/* ========================= Logic ========================= */
+function toggleSelectAll() {
+  const masterCheckbox = document.getElementById('select-all-books');
+  masterCheckbox.checked = !masterCheckbox.checked;
+  selectAllBooks(masterCheckbox.checked);
+}
+
+function selectAllBooks(checked) {
+  const quantityInputs = document.querySelectorAll('#books-list input[type="number"]');
+  const individualCheckboxes = document.querySelectorAll('#books-list input[type="checkbox"]');
+  const value = checked ? 1 : 0;
+  quantityInputs.forEach(input => { input.value = value; });
+  individualCheckboxes.forEach(cb => {
+    if (cb.id && cb.id.startsWith('check-book-')) cb.checked = checked;
+  });
+  calculateTotal();
+}
+
+function updateQuantityAndCheckbox(element, type) {
+  const index = element.getAttribute('data-index');
+  const checkbox = document.getElementById(`check-book-${index}`);
+  const qtyInput = document.getElementById(`qty-book-${index}`);
+
+  if (!checkbox || !qtyInput) return;
+
+  if (type === 'checkbox') {
+    qtyInput.value = element.checked ? 1 : 0;
+  } else if (type === 'input') {
+    let quantity = parseInt(element.value) || 0;
+    if (quantity < 0) { quantity = 0; element.value = 0; }
+    checkbox.checked = quantity > 0;
+  }
+  calculateTotal();
+}
+
+function calculateTotal() {
+  const selectedClass = document.getElementById('class-select').value;
+  if (!selectedClass) return;
+  const books = (window.bookData && window.bookData[selectedClass]) ? window.bookData[selectedClass] : [];
+  let grandTotal = 0;
+
+  const quantityInputs = document.querySelectorAll('#books-list input[type="number"]');
+  quantityInputs.forEach(input => {
+    const index = input.getAttribute('data-index');
+    const quantity = parseInt(input.value) || 0;
+    const book = books[index];
+    if (book) {
+      const totalPrice = (Number(book.Price) || 0) * quantity;
+      const el = document.getElementById(`book-${index}-total`);
+      if (el) el.textContent = totalPrice.toLocaleString();
+      grandTotal += totalPrice;
+    }
+  });
+
+  const gt = document.getElementById('grand-total');
+  if (gt) gt.textContent = grandTotal.toLocaleString() + ' BDT';
+}
+
+/* ============================================ Generate memo ============================================ */
+function generateMemo() {
+  calculateTotal();
+  const selectedClass = document.getElementById('class-select').value;
+  const memoOutput = document.getElementById('memo-output');
+  const studentName = document.getElementById('student-name').value;
+  const studentId = document.getElementById('student-id').value;
+
+  if (!selectedClass) { alert('Please select a Class.'); return; }
+
+  let finalTotal = 0;
+  const salesItems = [];
+  const quantityInputs = document.querySelectorAll('#books-list input[type="number"]');
+  const books = (window.bookData && window.bookData[selectedClass]) ? window.bookData[selectedClass] : [];
+
+  quantityInputs.forEach(input => {
+    const quantity = parseInt(input.value) || 0;
+    if (quantity > 0) {
+      const index = input.getAttribute('data-index');
+      const book = books[index];
+      const price = Number(book.Price) || 0;
+      const totalPrice = price * quantity;
+      finalTotal += totalPrice;
+      salesItems.push({ Subject: book.Subject, Book: book.Books, Price: price, Qty: quantity, Total: totalPrice });
+    }
+  });
+
+  if (salesItems.length === 0) { alert('Please select at least one book.'); return; }
+
+  // GENERATE MEMO
+  // Note: Class names (col-sl, etc) are added for fixed widths in print view
+  let memoHTML = `
+    <img src="image.png" class="memo-header-img" alt="Header">
+    
+    <div class="memo-meta">
+      <h2>Book Sales Memo</h2>
+      <table style="width:100%; margin-top:5px; border:none;">
+         <tr>
+            <td style="border:none;">Student Name: <strong>${studentName || 'N/A'}</strong></td>
+            <td style="border:none; text-align:right;">Date: <strong>${new Date().toLocaleDateString('en-GB')}</strong></td>
+         </tr>
+         <tr>
+            <td style="border:none;">Student ID: <strong>${studentId || 'N/A'}</strong></td>
+            <td style="border:none; text-align:right;">Class: <strong>${selectedClass}</strong></td>
+         </tr>
+      </table>
+    </div>
+
+    <table class="memo-table">
+      <thead>
+        <tr>
+          <th class="col-sl">SL</th>
+          <th class="col-item">Book Name & Subject</th>
+          <th class="col-price">Unit Price</th>
+          <th class="col-qty">Qty</th>
+          <th class="col-total">Total (BDT)</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  salesItems.forEach((item, i) => {
+    memoHTML += `
+      <tr>
+        <td class="col-sl" style="text-align:center;">${i+1}</td>
+        <td class="col-item">${escapeHtml(item.Book)} <br><span style="color:#555; font-size:0.9em;">(${escapeHtml(item.Subject)})</span></td>
+        <td class="col-price">${item.Price.toLocaleString()}</td>
+        <td class="col-qty">${item.Qty}</td>
+        <td class="col-total">${item.Total.toLocaleString()}</td>
+      </tr>
+    `;
+  });
+
+  memoHTML += `
+      <tr class="total-row">
+        <td colspan="4" style="text-align:right;">Grand Total Payable:</td>
+        <td class="col-total">${finalTotal.toLocaleString()} BDT</td>
+      </tr>
+    </tbody></table>
+    
+    <div class="footer-credit">System Design & Developed by NA Niloy</div>
+  `;
+
+  memoOutput.innerHTML = memoHTML;
+   
+  const logData = { class: selectedClass, studentName: studentName, studentId: studentId, total: finalTotal, items: salesItems };
+  logSaleToGoogleSheet(logData);
+
+  window.print();
+}
+
+function logSaleToGoogleSheet(data) {
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBxbzsIcvRK_RDjn4VPiet2dWEaHb1vuLxY6Gtjt09rtd5YkwJXGbIFawdlBIVzcnm/exec';
+  if (!SCRIPT_URL.includes('/s/')) return;
+  fetch(SCRIPT_URL, {
+    method: 'POST', mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).catch(err => console.error(err));
+}
+
+function resetForm() {
+  document.getElementById('class-select').value = '';
+  document.getElementById('student-name').value = '';
+  document.getElementById('student-id').value = '';
+  document.getElementById('books-list').innerHTML = '';
+}
+window.bookData = window.bookData || {};
+</script>
+</body>
+</html>
