@@ -95,8 +95,6 @@
             .memo-container { 
                 display: block !important; 
                 width: 100%;
-                /* Ensure padding at bottom so content doesn't overlap fixed footer */
-                padding-bottom: 30px; 
             }
 
             /* Smaller Header Image for Print to save vertical space */
@@ -136,16 +134,12 @@
             .col-qty { width: 7%; text-align: center; }
             .col-total { width: 20%; text-align: right; }
 
-            /* Footer credits - PINNED TO BOTTOM LEFT */
+            /* Footer credits - NORMAL FLOW (Not Fixed) */
             .footer-credit {
-                position: fixed;
-                bottom: 0;
-                left: 0;
+                margin-top: 30px; /* Pushes it down from the table */
+                text-align: left; /* Aligns to the left */
                 font-size: 8pt;
-                text-align: left;
                 color: #555;
-                background-color: #fff; /* Avoids transparency issues */
-                padding-top: 5px;
                 width: 100%;
             }
         }
