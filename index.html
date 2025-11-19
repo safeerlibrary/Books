@@ -140,15 +140,32 @@
                Pinned to bottom left, Arial font, works every time 
             */
             /* Footer credit fixed to bottom-left on every PDF page */
-.footer-credit {
-    position: fixed;
-    bottom: 10px;      /* distance from bottom */
-    left: 10px;        /* distance from left */
-    font-size: 8pt;
-    color: #000;
-    font-family: Arial, sans-serif;
-    width: auto;
-}
+@media print {
+      body {
+        margin: 0;
+      }
+      .footer-credit {
+        position: fixed;
+        bottom: 8mm;         /* distance from bottom of page */
+        left: 8mm;           /* distance from left edge */
+        font-size: 9pt;      /* adjust as needed */
+        color: #000;
+        font-family: Arial, sans-serif;
+        width: auto;
+        text-align: left;
+        /* Prevent footer from being selectable and avoid overlap */
+        pointer-events: none;
+        background: transparent;
+      }
+    }
+
+    /* On-screen (optional) */
+    .footer-credit {
+      display: block;
+      position: fixed;      /* keeps same on screen too */
+      bottom: 12px;
+      left: 12px;
+    }
 
         }
     </style>
@@ -539,4 +556,5 @@ window.bookData = window.bookData || {};
 </script>
 </body>
 </html>
+
 
