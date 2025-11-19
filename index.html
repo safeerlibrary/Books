@@ -16,6 +16,7 @@
             border-radius: 8px; 
             box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
             border-top: 5px solid #007bff;
+            position: relative; /* Needed for structure */
         }
 
         /* Header Image on Site */
@@ -66,6 +67,9 @@
         #select-all-header { display: flex; align-items: center; cursor: pointer; }
         .loader { display: inline-block; padding: 4px 8px; background: #e9ecef; border-radius: 4px; font-size: .9em; margin-left: 8px; }
 
+        /* Footer Credit - Hidden on screen, visible on print */
+        .footer-credit { display: none; }
+
         /* ============================
            PRINT / MEMO STYLES (FIXED)
            ============================ */
@@ -85,8 +89,8 @@
                 -webkit-print-color-adjust: exact; 
             }
             
-            /* Hide web interface */
-            body > #app > *:not(.memo-output) { display: none !important; }
+            /* Hide everything in #app EXCEPT the memo output AND the footer credit */
+            body > #app > *:not(.memo-output):not(.footer-credit) { display: none !important; }
             
             /* Reset App container */
             #app { box-shadow: none; border: none; padding: 0; margin: 0; max-width: 100%; width: 100%; }
@@ -95,6 +99,7 @@
             .memo-container { 
                 display: block !important; 
                 width: 100%;
+                padding-bottom: 50px; /* Space for the footer */
             }
 
             /* Smaller Header Image for Print to save vertical space */
@@ -118,11 +123,11 @@
             .memo-table { 
                 width: 100%; 
                 border-collapse: collapse; 
-                font-size: 11px; /* Smaller font to fit more rows */
+                font-size: 11px; 
             }
             .memo-table th, .memo-table td { 
                 border: 1px solid #000; 
-                padding: 3px 5px; /* Reduce padding to save height */
+                padding: 3px 5px; 
                 vertical-align: middle;
             }
             .memo-table th { background-color: #ddd !important; font-weight: bold; text-align: center; }
@@ -134,20 +139,21 @@
             .col-qty { width: 7%; text-align: center; }
             .col-total { width: 20%; text-align: right; }
 
-            /* Footer credits - NORMAL FLOW (Not Fixed) */
-            /* Footer credits - NORMAL FLOW (Not Fixed) */
-/* Footer credits pinned to bottom-left */
-.footer-credit {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    text-align: left;
-    font-size: 8pt;
-    color: #000000;
-    font-family: Arial, sans-serif; /* Sets font to Arial */
-    background-color: white;       /* Ensures clean background */
-}
+            /* --- PERMANENT FOOTER CREDIT STYLING --- */
+            .footer-credit {
+                display: block !important; /* Force show on print */
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                text-align: left;
+                font-size: 8pt;
+                color: #000000;
+                font-family: Arial, sans-serif;
+                background-color: white;
+                padding-top: 5px;
+                z-index: 9999;
+            }
         }
     </style>
 </head>
@@ -183,6 +189,8 @@
         <button onclick="resetForm()" class="btn-red">Create New Bill</button>
 
         <div id="memo-output" class="memo-container memo-output"></div>
+
+        <div class="footer-credit">System Design & Developed by NA Niloy</div>
     </div>
 
 <script>
@@ -452,8 +460,7 @@ function generateMemo() {
 
   if (salesItems.length === 0) { alert('Please select at least one book.'); return; }
 
-  // GENERATE MEMO
-  // Note: Class names (col-sl, etc) are added for fixed widths in print view
+  // GENERATE MEMO HTML
   let memoHTML = `
     <img src="image.png" class="memo-header-img" alt="Header">
     
@@ -503,17 +510,17 @@ function generateMemo() {
       </tr>
     </tbody></table>
     
-    <div class="footer-credit">System_Design_&_Developed_by_NA Niloy</div>
-  `;
-
-  // REMOVED: Receiver Signature and Authority Signature section
+    `;
 
   memoOutput.innerHTML = memoHTML;
   
   const logData = { class: selectedClass, studentName: studentName, studentId: studentId, total: finalTotal, items: salesItems };
   logSaleToGoogleSheet(logData);
 
-  window.print();
+  // Small timeout to ensure DOM is ready before print (fixes some browser issues)
+  setTimeout(() => {
+      window.print();
+  }, 100);
 }
 
 function logSaleToGoogleSheet(data) {
@@ -531,14 +538,9 @@ function resetForm() {
   document.getElementById('student-name').value = '';
   document.getElementById('student-id').value = '';
   document.getElementById('books-list').innerHTML = '';
+  document.getElementById('memo-output').innerHTML = ''; // Clear previous memo
 }
 window.bookData = window.bookData || {};
 </script>
 </body>
 </html>
-
-
-
-
-
-
