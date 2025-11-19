@@ -95,8 +95,6 @@
             .memo-container { 
                 display: block !important; 
                 width: 100%;
-                /* Add padding at bottom to ensure text doesn't overlap the fixed footer */
-                padding-bottom: 40px; 
             }
 
             /* Smaller Header Image for Print to save vertical space */
@@ -120,53 +118,32 @@
             .memo-table { 
                 width: 100%; 
                 border-collapse: collapse; 
-                font-size: 11px; 
+                font-size: 11px; /* Smaller font to fit more rows */
             }
             .memo-table th, .memo-table td { 
                 border: 1px solid #000; 
-                padding: 3px 5px; 
+                padding: 3px 5px; /* Reduce padding to save height */
                 vertical-align: middle;
             }
             .memo-table th { background-color: #ddd !important; font-weight: bold; text-align: center; }
 
-            /* Fixed Column Widths */
+            /* Fixed Column Widths to prevent overflow */
             .col-sl { width: 5%; text-align: center; }
             .col-item { width: 55%; }
             .col-price { width: 13%; text-align: right; }
             .col-qty { width: 7%; text-align: center; }
             .col-total { width: 20%; text-align: right; }
 
-            /* FOOTER CREDIT STYLING 
-               Pinned to bottom left, Arial font, works every time 
-            */
-            /* Footer credit fixed to bottom-left on every PDF page */
-@media print {
-      body {
-        margin: 0;
-      }
-      .footer-credit {
-        position: fixed;
-        bottom: 8mm;         /* distance from bottom of page */
-        left: 8mm;           /* distance from left edge */
-        font-size: 9pt;      /* adjust as needed */
-        color: #000;
-        font-family: Arial, sans-serif;
-        width: auto;
-        text-align: left;
-        /* Prevent footer from being selectable and avoid overlap */
-        pointer-events: none;
-        background: transparent;
-      }
-    }
-
-    /* On-screen (optional) */
-    .footer-credit {
-      display: block;
-      position: fixed;      /* keeps same on screen too */
-      bottom: 12px;
-      left: 12px;
-    }
-
+            /* Footer credits - NORMAL FLOW (Not Fixed) */
+            /* Footer credits - NORMAL FLOW (Not Fixed) */
+.footer-credit {
+    margin-top: 95px; 
+    text-align: left; 
+    font-size: 8pt;
+    color: #000000;
+    width: 100%;
+    font-family: Arial, sans-serif; /* <--- Added this line */
+}
         }
     </style>
 </head>
@@ -472,6 +449,7 @@ function generateMemo() {
   if (salesItems.length === 0) { alert('Please select at least one book.'); return; }
 
   // GENERATE MEMO
+  // Note: Class names (col-sl, etc) are added for fixed widths in print view
   let memoHTML = `
     <img src="image.png" class="memo-header-img" alt="Header">
     
@@ -521,18 +499,17 @@ function generateMemo() {
       </tr>
     </tbody></table>
     
-    <div class="footer-credit">System Design & Developed by NA Niloy</div>
+    <div class="footer-credit">System_Design_&_Developed_by_NA Niloy</div>
   `;
+
+  // REMOVED: Receiver Signature and Authority Signature section
 
   memoOutput.innerHTML = memoHTML;
   
   const logData = { class: selectedClass, studentName: studentName, studentId: studentId, total: finalTotal, items: salesItems };
   logSaleToGoogleSheet(logData);
 
-  // Small delay to ensure HTML renders before print dialog opens
-  setTimeout(() => {
-      window.print();
-  }, 100);
+  window.print();
 }
 
 function logSaleToGoogleSheet(data) {
@@ -550,11 +527,13 @@ function resetForm() {
   document.getElementById('student-name').value = '';
   document.getElementById('student-id').value = '';
   document.getElementById('books-list').innerHTML = '';
-  document.getElementById('memo-output').innerHTML = ''; // Clear old memo
 }
 window.bookData = window.bookData || {};
 </script>
 </body>
 </html>
+
+
+
 
 
