@@ -72,10 +72,10 @@
         .memo-container { display: none; }
 
         @media print {
-            /* Force A4 with very small margins to fit content */
+            /* Force A4 with minimal margins */
             @page { 
                 size: A4; 
-                margin: 6mm; 
+                margin: 10mm; 
             }
             
             body { 
@@ -95,10 +95,11 @@
             .memo-container { 
                 display: block !important; 
                 width: 100%;
-                padding-bottom: 30px; /* Make space for footer */
+                /* Add padding at bottom so content doesn't print BEHIND the fixed footer */
+                padding-bottom: 40px; 
             }
 
-            /* Smaller Header Image for Print to save vertical space */
+            /* Smaller Header Image for Print */
             .memo-header-img {
                 width: 100%;
                 max-height: 100px; 
@@ -119,38 +120,38 @@
             .memo-table { 
                 width: 100%; 
                 border-collapse: collapse; 
-                font-size: 11px; /* Smaller font to fit more rows */
+                font-size: 11px; 
+                margin-bottom: 20px;
             }
             .memo-table th, .memo-table td { 
                 border: 1px solid #000; 
-                padding: 3px 5px; /* Reduce padding to save height */
+                padding: 3px 5px; 
                 vertical-align: middle;
             }
             .memo-table th { background-color: #ddd !important; font-weight: bold; text-align: center; }
 
-            /* Fixed Column Widths to prevent overflow */
+            /* Fixed Column Widths */
             .col-sl { width: 5%; text-align: center; }
             .col-item { width: 55%; }
             .col-price { width: 13%; text-align: right; }
             .col-qty { width: 7%; text-align: center; }
             .col-total { width: 20%; text-align: right; }
 
-            /* UPDATED FOOTER CREDIT STYLES 
-               Fixed to bottom left
+            /* PERMANENT FOOTER STYLE 
+               Uses 'position: fixed' so it ignores browser header/footer settings.
             */
             .footer-credit {
-                position: fixed;
+                position: fixed; /* Sticks to viewport/paper bottom */
                 bottom: 0;
                 left: 0;
                 width: 100%;
-                /* Matches @page margin (6mm) so text aligns with content */
-                padding: 6mm; 
-                box-sizing: border-box;
-                
-                font-size: 8pt;
-                text-align: left;
-                color: #555;
-                background-color: white; /* Ensures readability over any background */
+                padding: 5px 10mm; /* Align text with page margins */
+                font-size: 9px;
+                color: #444;
+                text-align: left; /* Left aligned as requested */
+                background-color: white; /* White bg prevents text overlap mess */
+                z-index: 9999; /* Ensures it sits on top */
+                border-top: 1px solid #eee;
             }
         }
     </style>
@@ -457,7 +458,6 @@ function generateMemo() {
   if (salesItems.length === 0) { alert('Please select at least one book.'); return; }
 
   // GENERATE MEMO
-  // Note: Class names (col-sl, etc) are added for fixed widths in print view
   let memoHTML = `
     <img src="image.png" class="memo-header-img" alt="Header">
     
