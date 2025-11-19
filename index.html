@@ -139,19 +139,17 @@
             /* FOOTER CREDIT STYLING 
                Pinned to bottom left, Arial font, works every time 
             */
-            .footer-credit {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                background-color: white;
-                font-size: 8pt;
-                color: #000000;
-                font-family: Arial, sans-serif;
-                text-align: left;
-                padding-top: 5px;
-                z-index: 9999; /* Ensures it stays on top */
-            }
+            /* Footer credit fixed to bottom-left on every PDF page */
+.footer-credit {
+    position: fixed;
+    bottom: 10px;      /* distance from bottom */
+    left: 10px;        /* distance from left */
+    font-size: 8pt;
+    color: #000;
+    font-family: Arial, sans-serif;
+    width: auto;
+}
+
         }
     </style>
 </head>
@@ -541,3 +539,4 @@ window.bookData = window.bookData || {};
 </script>
 </body>
 </html>
+
